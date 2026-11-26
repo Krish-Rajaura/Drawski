@@ -8,9 +8,14 @@
     <Nullable>disable</Nullable>
     <RootNamespace>Drawski</RootNamespace>
     <AssemblyName>Drawski</AssemblyName>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <Product>Drawski</Product>
+    <ApplicationIcon>assets\Drawski.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="assets\Drawski.ico" />
+  </ItemGroup>
 
   <!-- Faster startup and a lighter runtime -->
   <PropertyGroup>

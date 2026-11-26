@@ -1,3 +1,5 @@
+<img src="assets/drawski.svg" width="96" alt="Drawski logo">
+
 # Drawski
 
 Draw on top of anything on your screen. Drawski puts a transparent layer over your whole desktop, so you can circle, underline and sketch over a PDF, a website, slides or code while you explain it, without switching to a whiteboard app.
@@ -356,4 +358,5 @@ Use Release builds for everyday use. They're pre-compiled (ReadyToRun), so they 
 | `THIRD-PARTY-NOTICES.md` | Licenses of bundled libraries (PDFsharp, MIT) |
 | `Native.cs` | Windows API calls: click-through, global shortcuts, covering all monitors, screen capture |
 | `installer/Drawski.iss` | Inno Setup script for the installer |
+| `assets/drawski.svg`, `assets/Drawski.ico` | The logo (source vector) and the app icon (16–256px) |
 | `build-installer.ps1` | Publishes the self-contained build and builds the installer |
