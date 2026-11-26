@@ -1,0 +1,11 @@
+<Window x:Class="Drawski.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Drawski Overlay" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="False" ShowActivated="False" ResizeMode="NoResize"
+        Left="0" Top="0" Width="200" Height="200">
+    <Grid>
+        <InkCanvas x:Name="_canvas" Background="#01FFFFFF"/>
+        <Border x:Name="_drawBorder" BorderBrush="#B34F8CFF" BorderThickness="3" IsHitTestVisible="False" Visibility="Collapsed"/>
+    </Grid>
+</Window>
