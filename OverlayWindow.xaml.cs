@@ -34,6 +34,7 @@ public partial class OverlayWindow : Window
     public double CurrentSize => SIZES[SizeIndex];
     public bool BoardOn { get; private set; }
     public bool InkHidden { get; private set; }
+    public bool PdfOpen => __pdf != null;
 
     readonly StrokeCollection _overlayStrokes = new(), _boardStrokes = new();
     readonly InkHistory _overlayHistory = new(), _boardHistory = new();
@@ -206,6 +207,7 @@ public partial class OverlayWindow : Window
             else if (key == Key.Y) Redo();
             else if (key == Key.S) _ = Save();
             else if (key == Key.O) Open();
+            else if (key == Key.E) ExportPdf();
             else return false;
             return true;
         }
@@ -331,6 +333,8 @@ public partial class OverlayWindow : Window
             MessageBox.Show(this, $"Couldn't open:\n{exception.Message}", "Drawski", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+
+    public void ExportPdf() => __pdf?.ExportPdf();
 
     void OpenPdf(string path)
     {

@@ -154,6 +154,8 @@
                 <ToggleButton x:Name="_hideButton" Content="&#xE890;" Style="{StaticResource ToolButton}" Click="OnHideClick" ToolTip="Hide ink (Ctrl+Alt+H)"/>
                 <Button Content="&#xE74E;" Style="{StaticResource ActionButton}" Click="OnSaveClick" ToolTip="Save (Ctrl+S). PDF: saved next to it. Screen: png or ink file"/>
                 <Button Content="&#xE8E5;" Style="{StaticResource ActionButton}" Click="OnOpenClick" ToolTip="Open PDF or ink file (Ctrl+O)"/>
+                <Button x:Name="_exportButton" Content="&#xE72D;" Style="{StaticResource ActionButton}" Click="OnExportClick" Visibility="Collapsed"
+                        ToolTip="Export PDF with ink, opens in any PDF viewer (Ctrl+E)"/>
                 <Button Content="&#xE74D;" Style="{StaticResource ActionButton}" Click="OnClearClick" ToolTip="Clear (Del / Ctrl+Alt+C)"/>
                 <Button Content="&#xE8BB;" Style="{StaticResource ActionButton}" Click="OnCloseClick" ToolTip="Quit Drawski"/>
             </UniformGrid>

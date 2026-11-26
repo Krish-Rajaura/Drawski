@@ -8,8 +8,7 @@ It can also open PDFs itself. When you do that, your drawings stick to the pages
 
 ## Contents
 
-- [Requirements](#requirements)
-- [Install and run](#install-and-run)
+- [Install](#install)
 - [Quick start](#quick-start)
 - [The two ways to draw](#the-two-ways-to-draw)
 - [Toolbar](#toolbar)
@@ -20,48 +19,31 @@ It can also open PDFs itself. When you do that, your drawings stick to the pages
 - [Troubleshooting](#troubleshooting)
 - [Performance](#performance)
 - [Known limitations](#known-limitations)
+- [Building from source](#building-from-source)
 - [Project structure](#project-structure)
 
 ---
 
-## Requirements
+## Install
 
-- Windows 10 (version 2004 / build 19041) or newer, or Windows 11
-- [.NET 11 SDK](https://dotnet.microsoft.com/download) to build it. If you only run a published exe, you need just the .NET 11 Desktop Runtime.
+**Requirements:** Windows 10 version 2004 (build 19041) or newer, or Windows 11, 64-bit. Nothing else: .NET is included in the installer.
 
-## Install and run
+1. Download `DrawskiSetup-<version>.exe` from the [Releases page](https://github.com/Krish-Rajaura/Drawski/releases).
+2. Run it.
+   - Windows may show **"Windows protected your PC"** because the installer isn't code-signed. Click **More info → Run anyway**.
+3. Choose who to install it for:
+   - **Only for me:** no admin rights needed. Installs to `%LocalAppData%\Programs\Drawski`.
+   - **All users:** needs admin. Installs to `Program Files\Drawski`.
+4. Optional tick boxes on the way:
+   - a desktop shortcut
+   - adding Drawski to **Open with** for PDF files. This doesn't change your default PDF app.
 
-**Run from source**
-
-```powershell
-cd C:\projects\Drawski
-dotnet run
-```
-
-**Build, then run the exe**
-
-```powershell
-dotnet build
-.\bin\Debug\net11.0-windows10.0.19041.0\Drawski.exe
-```
-
-**Make a single exe you can copy anywhere**
-
-```powershell
-dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o publish
-```
-
-This makes `publish\Drawski.exe` (about 25 MB). It still needs the .NET 11 Desktop Runtime installed on the PC. To get an exe that runs without .NET installed, use `--self-contained true` instead. The file will be much bigger.
-
-Use a published Release build for everyday use. It's pre-compiled (ReadyToRun), so it starts faster than `dotnet run` or a Debug build.
+Start it from the Start Menu. To remove it: **Settings → Apps → Installed apps → Drawski → Uninstall**. Uninstalling leaves your saved `.drawski` ink files alone.
 
 **Open a PDF straight away**
 
-```powershell
-Drawski.exe "C:\path\to\notes.pdf"
-```
-
-You can also right-click a PDF in Explorer → **Open with** → **Choose another app** → browse to `Drawski.exe`.
+- Right-click a PDF → **Open with → Drawski** (if you ticked that option while installing), or
+- from a terminal: `Drawski.exe "C:\path\to\notes.pdf"`
 
 **Startup options**
 
@@ -159,6 +141,7 @@ Picking a colour while in Mouse or Eraser mode switches back to your last drawin
 | `Ctrl+Y` or `Ctrl+Shift+Z` | Redo |
 | `Ctrl+S` | Save |
 | `Ctrl+O` | Open a PDF or ink file |
+| `Ctrl+E` | Export the open PDF with your ink, viewable in any PDF app |
 | `Shift` (hold while dragging a shape) | Square, circle, or 45° snapping |
 
 ## Saving and opening
@@ -178,7 +161,18 @@ Next time you open `notes.pdf` in Drawski, the drawings load automatically. The 
 
 - If the PDF's folder isn't writable (a read-only share, a protected folder), the ink goes to `%LocalAppData%\Drawski\ink\` instead, and still loads automatically next time.
 - If every drawing has been erased, saving deletes the `.drawski` file.
-- To share annotated notes, send **both** files and keep their names matching.
+- To share with someone who doesn't use Drawski, use **Export PDF** (below) instead.
+
+### Export PDF with ink
+
+With a PDF open, click the **Export** button (share icon) or press `Ctrl+E`. Drawski saves a **new** file, `notes (annotated).pdf` by default, with your drawings added as real PDF ink annotations:
+
+- They show up in any PDF viewer: Edge, Chrome, Acrobat, phones.
+- They print.
+- The text in the PDF stays selectable.
+- Each stroke is a separate annotation. In Acrobat or Edge you can select, move or delete them.
+
+The original PDF and your `.drawski` file stay as they are. Keep drawing in Drawski and export again whenever you need an updated copy. Laser strokes are never exported.
 
 ### Screen overlay ink
 
@@ -251,7 +245,7 @@ The PDF was edited (pages added, removed or reordered) after the ink was saved. 
 Pages are shown quickly at the old size while zooming, then redrawn sharp about 0.2 s after you stop zooming. Pages coming onto the screen are drawn as you scroll.
 
 ### Scrolling a PDF feels choppy
-Drawski draws on the CPU by default to save memory. On a slow CPU or a 4K screen, start it with `--gpu` instead (see [Startup options](#install-and-run)). It uses more memory but scrolls more smoothly.
+Drawski draws on the CPU by default to save memory. On a slow CPU or a 4K screen, start it with `--gpu` instead (see [Startup options](#install)). It uses more memory but scrolls more smoothly.
 
 ### High memory use
 Normal use is about 55 MB on its own and 170–240 MB with a PDF open at full screen. If you see 3× more, you're probably running with `--gpu`. See [Performance](#performance).
@@ -263,6 +257,12 @@ With several monitors, the PNG covers all of them in one image. Crop it afterwar
 - `NETSDK1045` / target framework not supported: install the .NET 11 SDK and check with `dotnet --list-sdks`.
 - The first build downloads the Windows SDK reference package from NuGet, so it needs an internet connection once.
 - "File is locked" / "being used by another process": Drawski is still running. Quit it (toolbar ✕ or Task Manager) and build again.
+
+### Installer problems
+- **"Windows protected your PC" (SmartScreen):** the installer isn't code-signed. Click **More info → Run anyway**.
+- **"This program requires Windows 10 version…":** your Windows is older than 10 version 2004. Update Windows. Drawski's PDF support needs it.
+- **Setup says Drawski is running:** quit Drawski (toolbar ✕) and click Retry.
+- **"Open with → Drawski" is missing:** you unticked that option during setup. Run the installer again and leave it ticked, or use **Open with → Choose another app** and browse to `Drawski.exe`.
 
 ---
 
@@ -289,11 +289,58 @@ How memory is kept low:
 ## Known limitations
 
 - Overlay ink is fixed to the screen. Only Drawski's own PDF viewer keeps ink attached to the content.
-- Ink saved for a PDF only shows in Drawski. Other PDF viewers won't show it.
+- The `.drawski` ink file only works in Drawski. To see the ink in other PDF apps, use **Export PDF**.
+- Exported annotations aren't read back into Drawski. Keep editing from the original PDF and its `.drawski` file.
 - PDF pages are images, so you can't select or copy text.
 - The eraser removes whole strokes, not parts of them.
 - The overlay doesn't appear over apps in exclusive full-screen mode (some games and video players).
 - **Clear** in the PDF viewer wipes ink on every page. One undo brings it all back.
+
+## Building from source
+
+You're welcome to change Drawski and build your own copy.
+
+**You need**
+- Windows 10 2004+ / Windows 11
+- [.NET 11 SDK](https://dotnet.microsoft.com/download)
+- [Inno Setup 6](https://jrsoftware.org/isdl.php), only for building the installer (`winget install JRSoftware.InnoSetup`)
+
+**Run while developing**
+
+```powershell
+git clone https://github.com/Krish-Rajaura/Drawski.git
+cd Drawski
+dotnet run
+```
+
+The first build downloads the Windows SDK reference package from NuGet, so it needs an internet connection once.
+
+**Build the installer**
+
+```powershell
+.\build-installer.ps1
+```
+
+This does two things:
+1. Publishes a self-contained build to `publish\`. It runs on any supported PC without .NET installed.
+2. Builds `installer\Output\DrawskiSetup-<version>.exe` from `installer\Drawski.iss`.
+
+To release a new version, change `<Version>` in `Drawski.csproj`. The installer picks it up automatically. **Never change the `AppId` in `Drawski.iss`**: that's how Windows recognises an upgrade of an existing install.
+
+If PowerShell refuses to run the script ("running scripts is disabled"), run it like this:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build-installer.ps1
+```
+
+**Other build options**
+
+| Goal | Command |
+|---|---|
+| Single exe, needs the .NET 11 Desktop Runtime (~25 MB) | `dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o publish` |
+| Folder build that needs nothing installed (~190 MB) | `dotnet publish -c Release -r win-x64 --self-contained true -o publish` |
+
+Use Release builds for everyday use. They're pre-compiled (ReadyToRun), so they start faster than `dotnet run` or Debug builds.
 
 ## Project structure
 
@@ -305,4 +352,8 @@ How memory is kept low:
 | `PdfWindow.xaml(.cs)` | PDF viewer: page virtualization, zoom, per-page ink, `.drawski` files |
 | `InkSurface.cs` | Tool behaviour for one drawing canvas (pen settings, shapes, laser tagging), used by both the overlay and every PDF page |
 | `InkHistory.cs` | Undo / redo, which can cover many pages at once |
+| `PdfInkExporter.cs` | Writes strokes into a copy of the PDF as `/Ink` annotations, handling rotated and cropped pages |
+| `THIRD-PARTY-NOTICES.md` | Licenses of bundled libraries (PDFsharp, MIT) |
 | `Native.cs` | Windows API calls: click-through, global shortcuts, covering all monitors, screen capture |
+| `installer/Drawski.iss` | Inno Setup script for the installer |
+| `build-installer.ps1` | Publishes the self-contained build and builds the installer |

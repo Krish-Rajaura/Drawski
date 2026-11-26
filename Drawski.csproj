@@ -8,6 +8,8 @@
     <Nullable>disable</Nullable>
     <RootNamespace>Drawski</RootNamespace>
     <AssemblyName>Drawski</AssemblyName>
+    <Version>1.1.0</Version>
+    <Product>Drawski</Product>
   </PropertyGroup>
 
   <!-- Faster startup and a lighter runtime -->
@@ -17,5 +19,9 @@
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
     <TieredPGO>true</TieredPGO>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Pinned: 6.2.4 is the last MIT version, 6.5+ is AGPL with a license check. Don't upgrade -->
+    <PackageReference Include="PDFsharp" Version="[6.2.4]" />
+  </ItemGroup>
 
 </Project>

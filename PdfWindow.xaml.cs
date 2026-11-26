@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -12,6 +13,7 @@ using System.Windows.Threading;
 using Windows.Data.Pdf;
 using Windows.Storage;
 using Windows.Storage.Streams;
+using Microsoft.Win32;
 
 namespace Drawski;
 
@@ -289,6 +291,56 @@ public partial class PdfWindow : Window
         using PdfPage page = __document.GetPage(0);
         BitmapSource probe = await RenderPage(page, 200);
         return probe.PixelWidth > 0 ? probe.PixelWidth / 200.0 : 1;
+    }
+
+    #endregion
+
+    #region Export
+
+    // Never touches the original, writes a copy with the ink as real pdf annotations
+    public async void ExportPdf()
+    {
+        List<(int Index, Size Size, StrokeCollection Strokes)> inked = _pages
+            .Select(slot => (slot.Index, slot.Size, Strokes: new StrokeCollection(slot.Strokes.Where(stroke => !InkSurface.IsLaser(stroke)).Select(stroke => stroke.Clone()))))
+            .Where(page => page.Strokes.Count > 0)
+            .ToList();
+        if (inked.Count == 0)
+        {
+            MessageBox.Show(this, "Nothing to export yet, draw on the PDF first.", "Drawski", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        SaveFileDialog dialog = new()
+        {
+            Title = "Export PDF with ink",
+            InitialDirectory = Path.GetDirectoryName(_pdfPath),
+            FileName = Path.GetFileNameWithoutExtension(_pdfPath) + " (annotated).pdf",
+            Filter = "PDF (*.pdf)|*.pdf",
+        };
+        if (dialog.ShowDialog(this) != true) return;
+
+        if (string.Equals(Path.GetFullPath(dialog.FileName), _pdfPath, StringComparison.OrdinalIgnoreCase))
+        {
+            MessageBox.Show(this, "Pick a different name. Drawski never overwrites the original PDF.", "Drawski", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        _status.Text = "Exporting...";
+        try
+        {
+            await Task.Run(() => new PdfInkExporter().Export(_pdfPath, dialog.FileName, inked));
+        }
+        catch (Exception exception)
+        {
+            UpdatePages();
+            MessageBox.Show(this, $"Couldn't export:\n{exception.Message}", "Drawski", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        UpdatePages();
+        MessageBoxResult result = MessageBox.Show(this, $"Exported to {Path.GetFileName(dialog.FileName)}.\n\nShow it in the folder?", "Drawski",
+            MessageBoxButton.YesNo, MessageBoxImage.Information);
+        if (result == MessageBoxResult.Yes) Process.Start("explorer.exe", $"/select,\"{dialog.FileName}\"");
     }
 
     #endregion

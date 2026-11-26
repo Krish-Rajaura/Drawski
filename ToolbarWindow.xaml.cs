@@ -60,6 +60,7 @@ public partial class ToolbarWindow : Window
         _boardButton.IsChecked = _overlay.BoardOn;
         _hideButton.IsChecked = _overlay.InkHidden;
         _hideButton.Content = _overlay.InkHidden ? "" : "";
+        _exportButton.Visibility = _overlay.PdfOpen ? Visibility.Visible : Visibility.Collapsed;
     }
 
     void OnGripDown(object sender, MouseButtonEventArgs e) => DragMove();
@@ -81,6 +82,8 @@ public partial class ToolbarWindow : Window
     void OnSaveClick(object sender, RoutedEventArgs e) => _ = _overlay.Save();
 
     void OnOpenClick(object sender, RoutedEventArgs e) => _overlay.Open();
+
+    void OnExportClick(object sender, RoutedEventArgs e) => _overlay.ExportPdf();
 
     void OnClearClick(object sender, RoutedEventArgs e) => _overlay.Clear();
 
