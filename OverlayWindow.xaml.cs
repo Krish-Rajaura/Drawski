@@ -14,13 +14,6 @@ public enum Tool { Mouse, Pen, Highlighter, Laser, Line, Arrow, Rectangle, Ellip
 
 public partial class OverlayWindow : Window
 {
-    public static readonly Color[] PALETTE =
-    {
-        Color.FromRgb(255, 59, 48), Color.FromRgb(255, 214, 10), Color.FromRgb(52, 199, 89),
-        Color.FromRgb(10, 132, 255), Color.FromRgb(17, 17, 17), Color.FromRgb(255, 255, 255),
-    };
-
-    const int HOTKEY_TOGGLE = 1, HOTKEY_CLEAR = 2, HOTKEY_HIDE = 3;
     const double LASER_HOLD = 1.0, LASER_FADE = 0.6;
     static readonly double[] SIZES = { 2.5, 5, 10 };
     static readonly Brush HIT_BACKGROUND = new SolidColorBrush(Color.FromArgb(1, 255, 255, 255));
@@ -28,8 +21,10 @@ public partial class OverlayWindow : Window
 
     public Action onStateChanged;
 
+    public readonly Settings Settings = new();
+
     public Tool CurrentTool { get; private set; } = Tool.Mouse;
-    public Color CurrentColor { get; private set; } = PALETTE[0];
+    public Color CurrentColor { get; private set; }
     public int SizeIndex { get; private set; } = 1;
     public double CurrentSize => SIZES[SizeIndex];
     public bool BoardOn { get; private set; }
@@ -46,6 +41,8 @@ public partial class OverlayWindow : Window
     IntPtr __hwnd;
     Tool __lastDrawTool = Tool.Pen;
     PdfWindow __pdf;
+    SettingsWindow __settingsWindow;
+    readonly HashSet<Shortcut> __failedHotkeys = new();
     readonly List<(Stroke stroke, StrokeCollection owner, DateTime time)> __laserStrokes = new();
     readonly DispatcherTimer __laserTimer = new() { Interval = TimeSpan.FromMilliseconds(30) };
 
@@ -59,6 +56,8 @@ public partial class OverlayWindow : Window
     {
         InitializeComponent();
         _startupFile = startupFile;
+        Settings.Load();
+        CurrentColor = Settings.Palette[0];
 
         _overlayHistory.Track(_overlayStrokes);
         _boardHistory.Track(_boardStrokes);
@@ -76,11 +75,7 @@ public partial class OverlayWindow : Window
         Native.SetExStyle(__hwnd, Native.WS_EX_TOOLWINDOW, true);
         Native.CoverVirtualScreen(__hwnd);
         HwndSource.FromHwnd(__hwnd).AddHook(WndProc);
-
-        uint modifiers = Native.MOD_CONTROL | Native.MOD_ALT | Native.MOD_NOREPEAT;
-        Native.RegisterHotKey(__hwnd, HOTKEY_TOGGLE, modifiers, (uint)KeyInterop.VirtualKeyFromKey(Key.D));
-        Native.RegisterHotKey(__hwnd, HOTKEY_CLEAR, modifiers, (uint)KeyInterop.VirtualKeyFromKey(Key.C));
-        Native.RegisterHotKey(__hwnd, HOTKEY_HIDE, modifiers, (uint)KeyInterop.VirtualKeyFromKey(Key.H));
+        RegisterHotkeys();
 
         _toolbar.Owner = this;
         _toolbar.Show();
@@ -88,13 +83,13 @@ public partial class OverlayWindow : Window
 
         if (_startupFile != null && Path.GetExtension(_startupFile).Equals(".pdf", StringComparison.OrdinalIgnoreCase) && File.Exists(_startupFile))
             OpenPdf(_startupFile);
+        else if (Settings.ShowOnStartup)
+            OpenSettings();
     }
 
     protected override void OnClosed(EventArgs e)
     {
-        Native.UnregisterHotKey(__hwnd, HOTKEY_TOGGLE);
-        Native.UnregisterHotKey(__hwnd, HOTKEY_CLEAR);
-        Native.UnregisterHotKey(__hwnd, HOTKEY_HIDE);
+        UnregisterHotkeys();
         base.OnClosed(e);
     }
 
@@ -105,12 +100,7 @@ public partial class OverlayWindow : Window
 
         if (msg != Native.WM_HOTKEY) return IntPtr.Zero;
 
-        switch (wParam.ToInt32())
-        {
-            case HOTKEY_TOGGLE: ToggleDrawMode(); break;
-            case HOTKEY_CLEAR: Clear(); break;
-            case HOTKEY_HIDE: ToggleInkHidden(); break;
-        }
+        Execute((Shortcut)(wParam.ToInt32() - 1));
         handled = true;
         return IntPtr.Zero;
     }
@@ -193,45 +183,148 @@ public partial class OverlayWindow : Window
     protected override void OnPreviewKeyDown(KeyEventArgs e)
     {
         base.OnPreviewKeyDown(e);
-        if (HandleKey(e.Key)) e.Handled = true;
+        if (HandleKey(e)) e.Handled = true;
     }
 
     // Shared with the pdf window
-    public bool HandleKey(Key key)
+    public bool HandleKey(KeyEventArgs e)
     {
-        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+        Hotkey pressed = new(e.Key == Key.System ? e.SystemKey : e.Key, Keyboard.Modifiers);
+        foreach (ShortcutInfo info in ShortcutInfo.ALL)
         {
-            bool shift = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
-            if (key == Key.Z && shift) Redo();
-            else if (key == Key.Z) Undo();
-            else if (key == Key.Y) Redo();
-            else if (key == Key.S) _ = Save();
-            else if (key == Key.O) Open();
-            else if (key == Key.E) ExportPdf();
-            else return false;
+            if (info.IsGlobal || Settings.Keys[info.Id] != pressed) continue;
+
+            Execute(info.Id);
             return true;
         }
-
-        switch (key)
-        {
-            case Key.Escape: SetTool(Tool.Mouse); break;
-            case Key.P: SetTool(Tool.Pen); break;
-            case Key.H: SetTool(Tool.Highlighter); break;
-            case Key.X: SetTool(Tool.Laser); break;
-            case Key.L: SetTool(Tool.Line); break;
-            case Key.A: SetTool(Tool.Arrow); break;
-            case Key.R: SetTool(Tool.Rectangle); break;
-            case Key.O: SetTool(Tool.Ellipse); break;
-            case Key.E: SetTool(Tool.Eraser); break;
-            case Key.B: ToggleBoard(); break;
-            case Key.Delete: Clear(); break;
-            case Key.OemOpenBrackets: SetSize(SizeIndex - 1); break;
-            case Key.OemCloseBrackets: SetSize(SizeIndex + 1); break;
-            case >= Key.D1 and <= Key.D6: SetColor(PALETTE[key - Key.D1]); break;
-            default: return false;
-        }
-        return true;
+        return false;
     }
+
+    public void Execute(Shortcut shortcut)
+    {
+        switch (shortcut)
+        {
+            case Shortcut.ToggleDraw: ToggleDrawMode(); break;
+            case Shortcut.ClearAll or Shortcut.Clear: Clear(); break;
+            case Shortcut.HideInk: ToggleInkHidden(); break;
+            case >= Shortcut.Mouse and <= Shortcut.Ellipse: SetTool(Enum.Parse<Tool>(shortcut.ToString())); break;
+            case >= Shortcut.Color1 and <= Shortcut.Color6: SetColor(Settings.Palette[shortcut - Shortcut.Color1]); break;
+            case Shortcut.SizeDown: SetSize(SizeIndex - 1); break;
+            case Shortcut.SizeUp: SetSize(SizeIndex + 1); break;
+            case Shortcut.Whiteboard: ToggleBoard(); break;
+            case Shortcut.Undo: Undo(); break;
+            case Shortcut.Redo: Redo(); break;
+            case Shortcut.Save: _ = Save(); break;
+            case Shortcut.Open: Open(); break;
+            case Shortcut.Export: ExportPdf(); break;
+        }
+    }
+
+    #region Settings
+
+    public void OpenSettings()
+    {
+        // Drawing mode would cover the settings window
+        if (CurrentTool != Tool.Mouse) SetTool(Tool.Mouse);
+
+        if (__settingsWindow != null)
+        {
+            if (__settingsWindow.WindowState == WindowState.Minimized) __settingsWindow.WindowState = WindowState.Normal;
+            __settingsWindow.Activate();
+            return;
+        }
+
+        __settingsWindow = new SettingsWindow(this);
+        __settingsWindow.Closed += (_, _) => __settingsWindow = null;
+        __settingsWindow.Show();
+    }
+
+    public void PickCustomColor()
+    {
+        ColorWheelWindow picker = new(CurrentColor) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterScreen };
+        if (picker.ShowDialog() == true) SetColor(picker.SelectedColor);
+    }
+
+    public void SetPaletteColor(int index, Color color)
+    {
+        if (CurrentColor == Settings.Palette[index]) CurrentColor = color;
+        Settings.Palette[index] = color;
+        SaveSettings();
+    }
+
+    public void ResetPalette()
+    {
+        for (int i = 0; i < Settings.Palette.Length; i++)
+        {
+            if (CurrentColor == Settings.Palette[i]) CurrentColor = Settings.DEFAULT_PALETTE[i];
+            Settings.Palette[i] = Settings.DEFAULT_PALETTE[i];
+        }
+        SaveSettings();
+    }
+
+    // Returns the shortcut that lost these keys, if another one had them
+    public Shortcut? SetShortcut(Shortcut id, Hotkey hotkey)
+    {
+        Shortcut? taken = null;
+        foreach ((Shortcut other, Hotkey keys) in Settings.Keys.ToList())
+        {
+            if (other == id || keys != hotkey || hotkey.IsNone) continue;
+
+            Settings.Keys[other] = Hotkey.NONE;
+            taken = other;
+        }
+        Settings.Keys[id] = hotkey;
+        SaveSettings();
+        return taken;
+    }
+
+    public void ResetShortcuts()
+    {
+        foreach (ShortcutInfo info in ShortcutInfo.ALL)
+            Settings.Keys[info.Id] = info.Default;
+        SaveSettings();
+    }
+
+    public bool HotkeyFailed(Shortcut id) => __failedHotkeys.Contains(id);
+
+    public void PauseHotkeys(bool paused)
+    {
+        if (paused) UnregisterHotkeys();
+        else RegisterHotkeys();
+    }
+
+    void SaveSettings()
+    {
+        Settings.Save();
+        RegisterHotkeys();
+        ApplyState();
+    }
+
+    void RegisterHotkeys()
+    {
+        UnregisterHotkeys();
+        foreach (ShortcutInfo info in ShortcutInfo.ALL.Where(info => info.IsGlobal))
+        {
+            Hotkey hotkey = Settings.Keys[info.Id];
+            if (hotkey.IsNone) continue;
+
+            // ModifierKeys uses the same bit values as the Win32 MOD_ flags
+            uint modifiers = (uint)hotkey.Modifiers | Native.MOD_NOREPEAT;
+            if (!Native.RegisterHotKey(__hwnd, HotkeyId(info.Id), modifiers, (uint)KeyInterop.VirtualKeyFromKey(hotkey.Key)))
+                __failedHotkeys.Add(info.Id);
+        }
+    }
+
+    void UnregisterHotkeys()
+    {
+        foreach (ShortcutInfo info in ShortcutInfo.ALL.Where(info => info.IsGlobal))
+            Native.UnregisterHotKey(__hwnd, HotkeyId(info.Id));
+        __failedHotkeys.Clear();
+    }
+
+    int HotkeyId(Shortcut id) => (int)id + 1;
+
+    #endregion
 
     #region Laser
 

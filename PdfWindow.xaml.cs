@@ -125,7 +125,7 @@ public partial class PdfWindow : Window
     protected override void OnPreviewKeyDown(KeyEventArgs e)
     {
         base.OnPreviewKeyDown(e);
-        if (_overlay.HandleKey(e.Key)) e.Handled = true;
+        if (_overlay.HandleKey(e)) e.Handled = true;
     }
 
     void OnToolChanged()

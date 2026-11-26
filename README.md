@@ -18,6 +18,7 @@ It can also open PDFs itself. When you do that, your drawings stick to the pages
 - [Keyboard shortcuts](#keyboard-shortcuts)
 - [Saving and opening](#saving-and-opening)
 - [Whiteboard](#whiteboard)
+- [Settings: colours and shortcuts](#settings-colours-and-shortcuts)
 - [Troubleshooting](#troubleshooting)
 - [Performance](#performance)
 - [Known limitations](#known-limitations)
@@ -40,7 +41,7 @@ It can also open PDFs itself. When you do that, your drawings stick to the pages
    - a desktop shortcut
    - adding Drawski to **Open with** for PDF files. This doesn't change your default PDF app.
 
-Start it from the Start Menu. To remove it: **Settings → Apps → Installed apps → Drawski → Uninstall**. Uninstalling leaves your saved `.drawski` ink files alone.
+Start it from the Start Menu. To remove it: **Settings → Apps → Installed apps → Drawski → Uninstall**. Uninstalling leaves your saved `.drawski` ink files and your settings (`%AppData%\Drawski`) alone.
 
 **Open a PDF straight away**
 
@@ -60,7 +61,7 @@ Drawski.exe --gpu "C:\path\to\notes.pdf"
 
 ## Quick start
 
-1. Start Drawski. A dark toolbar appears on the left edge of the screen. Nothing else changes: you're in **Mouse** mode, so clicks go through to your apps as normal.
+1. Start Drawski. The **Drawski window** opens, where you can change the toolbar colours and shortcuts. A dark toolbar appears on the left edge of the screen. You're in **Mouse** mode, so clicks go through to your apps as normal. Click **Start drawing**, or just close the window. Drawski keeps running.
 2. Click the **pen** (or press `Ctrl+Alt+D`). A thin blue border appears around the screen, which means you're drawing.
 3. Draw over whatever is on screen.
 4. Press `Esc` (or `Ctrl+Alt+D` again) to go back to Mouse mode. Your drawing stays visible, and you can click and scroll the app underneath again.
@@ -99,9 +100,9 @@ Drag the toolbar by the grip at the top. Hover over any button to see its name a
 |---|---|
 | Top | **Mouse**: stop drawing and click through to apps |
 | Tools | Pen, Highlighter, Laser, Eraser, Line, Arrow, Rectangle, Ellipse |
-| Colours | Red, Yellow, Green, Blue, Black, White |
+| Colours | Your six palette colours (red, yellow, green, blue, black and white by default), plus the **rainbow button** for any colour from the colour wheel |
 | Sizes | Thin, Medium, Thick |
-| Actions | Undo, Redo, Whiteboard, Hide ink, Save, Open, Clear, Quit |
+| Actions | Undo, Redo, Whiteboard, Hide ink, Save, Open, Export (when a PDF is open), Clear, **Settings** (gear), Quit |
 
 ## Tools
 
@@ -120,6 +121,8 @@ Picking a colour while in Mouse or Eraser mode switches back to your last drawin
 
 ## Keyboard shortcuts
 
+These are the defaults. Every one can be changed in [Settings](#settings-colours-and-shortcuts), and the toolbar tooltips always show your current keys.
+
 **Global**: these work from any app, even when Drawski isn't focused.
 
 | Shortcut | Action |
@@ -135,12 +138,12 @@ Picking a colour while in Mouse or Eraser mode switches back to your last drawin
 | `Esc` | Back to Mouse mode |
 | `P` `H` `X` `E` | Pen, Highlighter, Laser, Eraser |
 | `L` `A` `R` `O` | Line, Arrow, Rectangle, Ellipse |
-| `1` – `6` | Red, Yellow, Green, Blue, Black, White |
+| `1` – `6` | Palette colours 1–6 |
 | `[` / `]` | Thinner / thicker |
 | `B` | Whiteboard on / off |
 | `Del` | Clear |
 | `Ctrl+Z` | Undo |
-| `Ctrl+Y` or `Ctrl+Shift+Z` | Redo |
+| `Ctrl+Y` | Redo |
 | `Ctrl+S` | Save |
 | `Ctrl+O` | Open a PDF or ink file |
 | `Ctrl+E` | Export the open PDF with your ink, viewable in any PDF app |
@@ -198,6 +201,31 @@ Press `B` or click the whiteboard button. The screen turns plain white, which is
 - The whiteboard has its **own** ink and its own undo history. Switching back shows your overlay or PDF ink untouched.
 - Whiteboard ink is kept until you quit. Save it as a PNG or ISF if you want to keep it.
 
+## Settings: colours and shortcuts
+
+The Drawski window opens when Drawski starts. You can open it any time with the **gear** button on the toolbar. Changes apply straight away and are kept for next time.
+
+**Toolbar colours**
+- Click any of the six colours to change it with the colour wheel. They're the colours on the toolbar and on keys `1`–`6`.
+- **Reset colours** brings back the defaults.
+
+**Colour wheel**
+- Drag around the wheel to pick the hue (around the circle) and how strong the colour is (centre = pale, edge = full).
+- Use the bar below the wheel for brightness, or type a hex code such as `#8E44AD`.
+- Click the **Current** box to go back to the colour you started with.
+
+**Any colour for one drawing:** the rainbow button under the swatches opens the same wheel. The colour you pick is used right away, without changing your six palette colours. While it's in use, its colour shows in the middle of the rainbow button.
+
+**Shortcuts**
+- Click a shortcut, then press the keys you want. Click it again to cancel.
+- If the keys already belong to another action, that action loses them and Drawski tells you which one.
+- **Work in any app** shortcuts must include `Ctrl` or `Alt`, so they don't take over normal typing. If another app already owns the keys, the row shows **⚠** and you should pick different ones.
+- The ↺ button next to a changed shortcut resets that one. **Reset all shortcuts** resets them all.
+
+**Show this window when Drawski starts:** untick it to start straight to the toolbar. It doesn't open when Drawski is started with a PDF ("Open with").
+
+Settings are saved in `%AppData%\Drawski\settings.json`. Delete that file to go back to every default.
+
 ---
 
 ## Troubleshooting
@@ -212,7 +240,8 @@ You're in drawing mode, so the overlay is catching your clicks. Look for the blu
 - Black ink on a dark app, or white ink on a light one, can be hard to see. Change the colour.
 
 ### The global shortcuts (`Ctrl+Alt+D/C/H`) do nothing
-- Another app may already use that shortcut. Windows gives each shortcut to only one app, and Drawski gets no warning when it misses out. Close the other app, or change the keys in `OverlayWindow.xaml.cs` (`OnLoaded`, the `RegisterHotKey` lines).
+- Another app may already use that shortcut. Windows gives each shortcut to only one app. Open **Settings** (gear button). A shortcut that couldn't be claimed shows **⚠**. Pick different keys for it.
+- You may have changed it. The toolbar tooltips and the Settings window show the current keys.
 - On some keyboard layouts `Ctrl+Alt` acts as `AltGr` and types a character instead.
 - Shortcuts don't reach programs running **as administrator** unless Drawski is also run as administrator.
 
@@ -351,6 +380,10 @@ Use Release builds for everyday use. They're pre-compiled (ReadyToRun), so they 
 | `App.xaml(.cs)` | Startup, single-instance check, passes a PDF path from the command line |
 | `OverlayWindow.xaml(.cs)` | The full-screen transparent layer. Holds the current tool, colour and size, handles shortcuts, the whiteboard, laser fading, saving and opening |
 | `ToolbarWindow.xaml(.cs)` | The floating toolbar |
+| `SettingsWindow.xaml(.cs)` | The Drawski window: palette colours, shortcuts, show-at-startup |
+| `ColorWheelWindow.xaml(.cs)` | Colour wheel with brightness bar and hex input |
+| `Settings.cs` | Loads and saves `%AppData%\Drawski\settings.json` |
+| `Shortcuts.cs`, `Hotkey.cs` | Every shortcut with its default keys, and a key combination that can be saved and displayed |
 | `PdfWindow.xaml(.cs)` | PDF viewer: page virtualization, zoom, per-page ink, `.drawski` files |
 | `InkSurface.cs` | Tool behaviour for one drawing canvas (pen settings, shapes, laser tagging), used by both the overlay and every PDF page |
 | `InkHistory.cs` | Undo / redo, which can cover many pages at once |
