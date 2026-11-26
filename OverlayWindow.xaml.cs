@@ -241,7 +241,7 @@ public partial class OverlayWindow : Window
 
     public void PickCustomColor()
     {
-        ColorWheelWindow picker = new(CurrentColor) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterScreen };
+        ColorWheelWindow picker = new(CurrentColor, Settings.SavedColors) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterScreen };
         if (picker.ShowDialog() == true) SetColor(picker.SelectedColor);
     }
 
@@ -293,7 +293,7 @@ public partial class OverlayWindow : Window
         else RegisterHotkeys();
     }
 
-    void SaveSettings()
+    public void SaveSettings()
     {
         Settings.Save();
         RegisterHotkeys();

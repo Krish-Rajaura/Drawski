@@ -8,7 +8,7 @@
     <Nullable>disable</Nullable>
     <RootNamespace>Drawski</RootNamespace>
     <AssemblyName>Drawski</AssemblyName>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Product>Drawski</Product>
     <ApplicationIcon>assets\Drawski.ico</ApplicationIcon>
   </PropertyGroup>

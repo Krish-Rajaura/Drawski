@@ -203,28 +203,40 @@ Press `B` or click the whiteboard button. The screen turns plain white, which is
 
 ## Settings: colours and shortcuts
 
-The Drawski window opens when Drawski starts. You can open it any time with the **gear** button on the toolbar. Changes apply straight away and are kept for next time.
+The Drawski window opens when Drawski starts. You can open it any time with the **gear** button on the toolbar. It has three tabs: **Colours**, **Shortcuts** and **General**. Changes apply straight away and are kept for next time.
 
-**Toolbar colours**
-- Click any of the six colours to change it with the colour wheel. They're the colours on the toolbar and on keys `1`–`6`.
-- **Reset colours** brings back the defaults.
+### Colours tab
+
+**Toolbar colours:** the six slots at the top are the colours on the toolbar and on keys `1`–`6`. To change one:
+1. Click a slot. It gets a blue ring.
+2. Pick a colour on the wheel, type a hex code, or click one of **My colours**.
+3. Click **Apply to colour N**. Its preview sits next to the slot's current colour so you can compare first.
+
+**Reset toolbar colours** brings back the defaults.
+
+**My colours:** save as many extra colours as you like (up to 40):
+- **Add to My colours** saves whatever is on the wheel.
+- Click a saved colour to load it into the wheel. Right-click it to remove it.
+- They also show up in the toolbar's rainbow pop-up for one-click picking.
 
 **Colour wheel**
 - Drag around the wheel to pick the hue (around the circle) and how strong the colour is (centre = pale, edge = full).
-- Use the bar below the wheel for brightness, or type a hex code such as `#8E44AD`.
-- Click the **Current** box to go back to the colour you started with.
+- Use the bar below it for brightness, or type a hex code such as `#8E44AD`.
 
-**Any colour for one drawing:** the rainbow button under the swatches opens the same wheel. The colour you pick is used right away, without changing your six palette colours. While it's in use, its colour shows in the middle of the rainbow button.
+**Any colour for one drawing:** the rainbow button under the toolbar swatches opens a pop-up with the same wheel and your saved colours. The colour you pick is used right away, without changing the six toolbar colours. While it's in use, its colour shows in the middle of the rainbow button. In the pop-up, click **Current** to go back to the colour you started with.
 
-**Shortcuts**
+### Shortcuts tab
 - Click a shortcut, then press the keys you want. Click it again to cancel.
 - If the keys already belong to another action, that action loses them and Drawski tells you which one.
 - **Work in any app** shortcuts must include `Ctrl` or `Alt`, so they don't take over normal typing. If another app already owns the keys, the row shows **⚠** and you should pick different ones.
 - The ↺ button next to a changed shortcut resets that one. **Reset all shortcuts** resets them all.
 
-**Show this window when Drawski starts:** untick it to start straight to the toolbar. It doesn't open when Drawski is started with a PDF ("Open with").
+### General tab
 
-Settings are saved in `%AppData%\Drawski\settings.json`. Delete that file to go back to every default.
+- **Show this window when Drawski starts:** untick it to start straight to the toolbar. It doesn't open when Drawski is started with a PDF ("Open with").
+- **About:** the version and where settings are saved.
+
+Settings, including My colours, are saved in `%AppData%\Drawski\settings.json`. Delete that file to go back to every default.
 
 ---
 
@@ -380,8 +392,9 @@ Use Release builds for everyday use. They're pre-compiled (ReadyToRun), so they 
 | `App.xaml(.cs)` | Startup, single-instance check, passes a PDF path from the command line |
 | `OverlayWindow.xaml(.cs)` | The full-screen transparent layer. Holds the current tool, colour and size, handles shortcuts, the whiteboard, laser fading, saving and opening |
 | `ToolbarWindow.xaml(.cs)` | The floating toolbar |
-| `SettingsWindow.xaml(.cs)` | The Drawski window: palette colours, shortcuts, show-at-startup |
-| `ColorWheelWindow.xaml(.cs)` | Colour wheel with brightness bar and hex input |
+| `SettingsWindow.xaml(.cs)` | The Drawski window: Colours, Shortcuts and General tabs |
+| `ColorWheel.xaml(.cs)` | Reusable colour wheel control: hue/saturation wheel, brightness bar, hex input |
+| `ColorWheelWindow.xaml(.cs)` | The toolbar's rainbow pop-up: wheel, new/current preview, My colours |
 | `Settings.cs` | Loads and saves `%AppData%\Drawski\settings.json` |
 | `Shortcuts.cs`, `Hotkey.cs` | Every shortcut with its default keys, and a key combination that can be saved and displayed |
 | `PdfWindow.xaml(.cs)` | PDF viewer: page virtualization, zoom, per-page ink, `.drawski` files |

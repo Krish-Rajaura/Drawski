@@ -1,7 +1,10 @@
+using System.Diagnostics;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 namespace Drawski;
@@ -14,6 +17,7 @@ public partial class SettingsWindow : Window
 
     readonly OverlayWindow _overlay;
 
+    int __selectedSlot;
     Shortcut? __capturing;
 
     Settings Settings => _overlay.Settings;
@@ -22,7 +26,14 @@ public partial class SettingsWindow : Window
     {
         InitializeComponent();
         _overlay = overlay;
+
         _startupCheck.IsChecked = Settings.ShowOnStartup;
+        _versionText.Text = $"Drawski {Assembly.GetExecutingAssembly().GetName().Version?.ToString(3)}";
+        _settingsPathText.Text = "Settings are saved in " + System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Drawski", "settings.json");
+
+        _wheel.onColorChanged += UpdateColorPreview;
+        _wheel.SetColor(Settings.Palette[0]);
+        _tabs.SelectionChanged += (_, e) => { if (e.Source == _tabs) CancelCapture(); };
         Deactivated += (_, _) => CancelCapture();
         Refresh();
     }
@@ -35,57 +46,121 @@ public partial class SettingsWindow : Window
 
     void Refresh()
     {
-        BuildPalette();
-        _globalRows.Children.Clear();
-        _localRows.Children.Clear();
-        foreach (ShortcutInfo info in ShortcutInfo.ALL)
-            (info.IsGlobal ? _globalRows : _localRows).Children.Add(ShortcutRow(info));
+        BuildSlots();
+        BuildSavedColors();
+        BuildShortcutRows();
+        UpdateColorPreview();
     }
 
     #region Colours
 
-    void BuildPalette()
+    void BuildSlots()
     {
-        _paletteGrid.Children.Clear();
+        _slotsPanel.Children.Clear();
         for (int i = 0; i < Settings.Palette.Length; i++)
         {
             Color color = Settings.Palette[i];
-            Button swatch = new()
+            RadioButton slot = new()
             {
-                Style = (Style)FindResource("SwatchButton"),
+                Style = (Style)FindResource("SlotSwatch"),
                 Background = new SolidColorBrush(color),
+                IsChecked = i == __selectedSlot,
                 Tag = i,
-                ToolTip = "Click to change",
+                ToolTip = $"Colour {i + 1}: click to edit",
             };
-            swatch.Click += OnSwatchClick;
+            slot.Click += OnSlotClick;
 
-            StackPanel cell = new() { Margin = new Thickness(0, 0, 12, 0) };
-            cell.Children.Add(swatch);
-            cell.Children.Add(new TextBlock { Text = $"#{color.R:X2}{color.G:X2}{color.B:X2}", FontSize = 12, Margin = new Thickness(0, 6, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
+            StackPanel cell = new() { Margin = new Thickness(0, 0, 10, 0) };
+            cell.Children.Add(slot);
+            cell.Children.Add(new TextBlock { Text = ToHex(color), FontSize = 12, HorizontalAlignment = HorizontalAlignment.Center });
             cell.Children.Add(new TextBlock { Text = $"Key {Settings.Keys[Shortcut.Color1 + i].Display}", FontSize = 11, Foreground = MUTED_FOREGROUND, HorizontalAlignment = HorizontalAlignment.Center });
-            _paletteGrid.Children.Add(cell);
+            _slotsPanel.Children.Add(cell);
         }
     }
 
-    void OnSwatchClick(object sender, RoutedEventArgs e)
+    void BuildSavedColors()
     {
-        int index = (int)((FrameworkElement)sender).Tag;
-        ColorWheelWindow picker = new(Settings.Palette[index]) { Owner = this };
-        if (picker.ShowDialog() != true) return;
+        _savedPanel.Children.Clear();
+        foreach (Color color in Settings.SavedColors)
+        {
+            Button chip = new()
+            {
+                Style = (Style)FindResource("SmallSwatch"),
+                Background = new SolidColorBrush(color),
+                Tag = color,
+                ToolTip = $"{ToHex(color)}: click to load, right-click to remove",
+            };
+            chip.Click += (_, _) => _wheel.SetColor((Color)chip.Tag);
+            chip.MouseRightButtonUp += OnSavedRightClick;
+            _savedPanel.Children.Add(chip);
+        }
+        _savedEmpty.Visibility = Settings.SavedColors.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
 
-        _overlay.SetPaletteColor(index, picker.SelectedColor);
+    void UpdateColorPreview()
+    {
+        Color slotColor = Settings.Palette[__selectedSlot];
+        _slotPreview.Background = new SolidColorBrush(slotColor);
+        _slotPreviewLabel.Text = $"Colour {__selectedSlot + 1} now";
+        _newPreview.Background = new SolidColorBrush(_wheel.SelectedColor);
+        _applyButton.Content = $"Apply to colour {__selectedSlot + 1}";
+        _applyButton.IsEnabled = _wheel.SelectedColor != slotColor;
+        _addSavedButton.IsEnabled = !Settings.SavedColors.Contains(_wheel.SelectedColor);
+    }
+
+    void OnSlotClick(object sender, RoutedEventArgs e)
+    {
+        __selectedSlot = (int)((FrameworkElement)sender).Tag;
+        _wheel.SetColor(Settings.Palette[__selectedSlot]);
+        UpdateColorPreview();
+    }
+
+    void OnApplyClick(object sender, RoutedEventArgs e)
+    {
+        _overlay.SetPaletteColor(__selectedSlot, _wheel.SelectedColor);
         Refresh();
+    }
+
+    void OnAddSavedClick(object sender, RoutedEventArgs e)
+    {
+        Color color = _wheel.SelectedColor;
+        if (Settings.SavedColors.Contains(color)) return;
+        if (Settings.SavedColors.Count >= Settings.MAX_SAVED_COLORS) Settings.SavedColors.RemoveAt(0);
+
+        Settings.SavedColors.Add(color);
+        _overlay.SaveSettings();
+        BuildSavedColors();
+        UpdateColorPreview();
+    }
+
+    void OnSavedRightClick(object sender, MouseButtonEventArgs e)
+    {
+        Settings.SavedColors.Remove((Color)((FrameworkElement)sender).Tag);
+        _overlay.SaveSettings();
+        BuildSavedColors();
+        UpdateColorPreview();
     }
 
     void OnResetColoursClick(object sender, RoutedEventArgs e)
     {
         _overlay.ResetPalette();
+        _wheel.SetColor(Settings.Palette[__selectedSlot]);
         Refresh();
     }
+
+    string ToHex(Color color) => $"#{color.R:X2}{color.G:X2}{color.B:X2}";
 
     #endregion
 
     #region Shortcuts
+
+    void BuildShortcutRows()
+    {
+        _globalRows.Children.Clear();
+        _localRows.Children.Clear();
+        foreach (ShortcutInfo info in ShortcutInfo.ALL)
+            (info.IsGlobal ? _globalRows : _localRows).Children.Add(ShortcutRow(info));
+    }
 
     Grid ShortcutRow(ShortcutInfo info)
     {
@@ -159,7 +234,7 @@ public partial class SettingsWindow : Window
             _overlay.PauseHotkeys(true);
             _shortcutMessage.Text = "";
         }
-        Refresh();
+        BuildShortcutRows();
     }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e)
@@ -196,7 +271,7 @@ public partial class SettingsWindow : Window
 
         __capturing = null;
         _overlay.PauseHotkeys(false);
-        Refresh();
+        BuildShortcutRows();
     }
 
     void OnResetShortcutClick(object sender, RoutedEventArgs e)
@@ -222,6 +297,12 @@ public partial class SettingsWindow : Window
     {
         Settings.ShowOnStartup = _startupCheck.IsChecked == true;
         Settings.Save();
+    }
+
+    void OnLinkClick(object sender, RequestNavigateEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        e.Handled = true;
     }
 
     void OnCloseClick(object sender, RoutedEventArgs e) => Close();
